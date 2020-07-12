@@ -221,6 +221,216 @@ https://getbootstrap.com/docs/4.5/content/tables/#hoverable-rows
 ### reducer
 
 state と action の二つの引数を受け取る。action には type という属性があり、type によって処理の分岐を行う。
+src/reducer の中に、以下のようなコードを書く。
 
 ```js
+const events = (state = [], action) => {
+  switch (action.type) {
+    case 'CREATE_EVENT':
+      const event = { title: action.title, body: action.body };
+      const length = state.length;
+      const id = length == 0 ? 1 : state[length - 1].id + 1;
+
+      return [...state, { id: id, ...event }];
+    case 'DELETE_EVENT':
+      return ...;
+    case 'DELETE_ALL_EVENTS':
+      return [];
+    default:
+      return state;
+  }
+};
+
+export default events;
+```
+
+> import React, { useReducer } from 'react';
+> import reducer from ../reducers
+
+react の関数である useReducer と、作成した src/reducer 内の index.js をインポートする。(この時、index.js は省略可能)
+
+公式ドキュメント(
+https://ja.reactjs.org/docs/hooks-reference.html#usereducer)
+
+> const [state, dispatch] = useReducer(reducer, initialArg, init);
+
+useReducer の第一引数には reducer、第二引数にはデフォルト状態の指定、第三引数は初期化時のコールバックを指定する。
+
+### onClick 時のリロードを防ぐ方法
+
+e.preventDefault()を指定することで、ボタンにデフォルトで付与されている submit 処理を行わないようにする。
+SPA では非常に重要な機能。
+
+```js
+const addEvent = (e) => {
+  e.preventDefault();
+};
+
+return (
+  <button className="btn btn-primary" onClick={addEvent}>
+    イベントを作成する
+  </button>
+);
+```
+
+### フォームに入力された値を state で管理する。
+
+```js
+import React, { useReducer, useState } from 'react';
+```
+
+### onClick 時に dispatch を渡す
+
+dispatch(action)のように、action を引数に渡す。
+action は必ず type をプロパティに持たなければならない。
+value={title}を付けることで setTitle('')を行った後にフォームが初期化される。
+
+```js
+const [state, dispatch] = useReducer(reducer, []);
+const [title, setTitle] = useState('');
+const [body, setBody] = useState('');
+
+const addEvent = (e) => {
+  e.preventDefault();
+
+  dispatch({
+    type: 'CREATE_EVENT',
+    title,
+    body,
+  });
+  setTitle('');
+  setBody('');
+};
+
+<div className="form-group">
+  <label htmlFor="formEventTitle">タイトル</label>
+  <input
+    className="form-control"
+    id="formEventTitle"
+    value={title}
+    onChange={(e) => setTitle(e.target.value)}
+  />
+</div>
+<div className="form-group">
+  <label htmlFor="formEventBody">ボディー</label>
+  <textarea
+    className="form-control"
+    id="formEventBody"
+    value={body}
+    onChange={(e) => setBody(e.target.value)}
+  />
+</div>
+```
+
+### 削除機能の実装
+
+https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/filter
+
+reducer に渡したい値は以下の 2 つ
+①type
+②id
+
+id の取得は map()の内部で行うのが望ましい為、const handleClickDeleteButton = ...を map 内に記述する。
+
+```js
+<tbody>
+  {state.map((event, index) => {
+    const handleClickDeleteButton = () => {
+      dispatch({
+        type: 'DELETE_EVENT',
+        id: event.id,
+      });
+    };
+    return (
+      <tr key={index}>
+        <td>{event.id}</td>
+        <td>{event.title}</td>
+        <td>{event.body}</td>
+        <td>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleClickDeleteButton}
+          >
+            削除
+          </button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
+```
+
+渡された値を使用して、reducer の内部で filter()を用いてデータの削除処理を行う。
+
+```js
+case 'DELETE_EVENT':
+  //actionから指定されたidの情報を取り除く→filter()を用いる
+
+  return state.filter((event) => event.id !== action.id);
+```
+
+前者は、引数で受け取る際に、dispatch と event に格納するパターン
+
+後者は、一旦、props をうけとってから、dispatch と event に展開するパターン
+
+```js
+const Event = ({ event, dispatch }) => {
+  const handleClickDeleteButton = () => {
+    dispatch({
+      type: 'DELETE_EVENT',
+      id: event.id,
+    });
+  };
+
+const Event = (props) => {
+  const { event, dispatch } = props
+  const handleClickDeleteButton = () => {
+    dispatch({
+      type: 'DELETE_EVENT',
+      id: event.id,
+    });
+  };
+```
+
+### disabled 属性の付与
+
+イベント作成ボタンは、タイトル、ボディーのいずれかが空であれば非活性(disabled)状態にしたい。
+
+```js
+const unCreatable = title === '' || body === '';
+
+render() {
+  <button
+    className="btn btn-primary"
+    onClick={addEvent}
+    disabled={unCreatable}
+  >
+    イベントを作成する
+  </button>
+}
+```
+
+### window.confirm
+
+https://developer.mozilla.org/ja/docs/Web/API/Window/confirm
+
+```js
+const deleteALLEvents = (e) => {
+  e.preventDefault();
+  const result = window.confirm('全てのイベントを削除してもよろしいですか？');
+  if (result) dispatch({ type: 'DELETE_ALL_EVENTS' });
+};
+```
+
+シングルクォートとバッククォートの違い
+
+```js
+const result = window.confirm(
+  'イベント(id=' + event.id + ')を削除してもよろしいですか？'
+);
+
+const result = window.confirm(
+  `イベント(id=${event.id})を削除してもよろしいですか？`
+);
 ```
