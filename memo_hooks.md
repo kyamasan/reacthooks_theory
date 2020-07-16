@@ -434,3 +434,14 @@ const result = window.confirm(
   `イベント(id=${event.id})を削除してもよろしいですか？`
 );
 ```
+
+### Action のタイプを定数化する
+
+src/actions/index.js の中に、必要な ActionType を定数化して書く。
+これで typo によるトラブルを未然に防ぐことができる。
+
+```js
+export const CREATE_EVENT = 'CREATE_EVENT';
+export const DELETE_EVENT = 'DELETE_EVENT';
+export const DELETE_ALL_EVENTS = 'DELETE_ALL_EVENTS';
+```
