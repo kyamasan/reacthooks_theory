@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useContext } from 'react';
+import AppContext from '../contexts/AppContext';
 
 const Event = (props) => {
   const { event, dispatch } = props;
@@ -12,21 +13,26 @@ const Event = (props) => {
         id: event.id,
       });
   };
+
+  const value = useContext(AppContext);
   return (
-    <tr>
-      <td>{event.id}</td>
-      <td>{event.title}</td>
-      <td>{event.body}</td>
-      <td>
-        <button
-          type="button"
-          className="btn btn-danger"
-          onClick={handleClickDeleteButton}
-        >
-          削除
-        </button>
-      </td>
-    </tr>
+    <>
+      <div>{value}</div>
+      <tr>
+        <td>{event.id}</td>
+        <td>{event.title}</td>
+        <td>{event.body}</td>
+        <td>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={handleClickDeleteButton}
+          >
+            削除
+          </button>
+        </td>
+      </tr>
+    </>
   );
 };
 

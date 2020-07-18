@@ -445,3 +445,99 @@ export const CREATE_EVENT = 'CREATE_EVENT';
 export const DELETE_EVENT = 'DELETE_EVENT';
 export const DELETE_ALL_EVENTS = 'DELETE_ALL_EVENTS';
 ```
+
+### prop drilling 問題について
+
+prop を使用してコンポーネント間で値の受け渡しを行うのはコンポーネントの数が増えるにつれ、非常に大変になる。
+
+redux を導入することで、provider が状態を一元管理してくれるが、導入コストがやや高いという問題がある。
+(データを共有したいだけなのに、mapStateToProps や mapDispatchToProps などの処理をデータを参照したい全てのコンポーネントに書かなければならない)
+react hooks の登場で、useContext という機能が登場したことで、redux と同じく drilling 問題を解決することができるようになった。(なおかつ、redux のように connect 関数でコンポーネントをラップする必要もない)
+
+### React Context
+
+Context 自体は hooks の機能ではないが、 useContext という React hooks の機能を使用する為の大前提となる、React の機能。
+
+src/contexts/AppContext.js の中に、context のインスタンスを作成していく。(複数作成も可能)
+ここで export したインスタンスを共有元(provider)と先(consumer)の両者のコンポーネントで import して使っていく。
+createContext は小文字で書く必要があるので注意。
+
+```js
+import { createContext } from 'react';
+
+const AppContext = createContext();
+
+export default AppContext;
+```
+
+まずは共有元(App.js)で div を AppContext.Provider でラップする。
+https://ja.reactjs.org/docs/context.html#contextprovider
+
+> <MyContext.Provider value={/_ 何らかの値 _/}>
+
+value という特殊な prop に対して、'Hello World'を渡す。
+
+```js
+<AppContext.Provider value={'Hello World'}>
+  <div className="container-fluid">
+    <h4>イベント作成フォーム</h4>
+    <form></form>
+
+    <h4>イベント一覧</h4>
+    <table className="table table-hover"></table>
+  </div>
+</AppContext.Provider>
+```
+
+次に流用先(Event.js)で div を AppContext.Consumer でラップする。
+Consumer というコンポーネントの内部に、流用元から渡された value をレンダリングする為の関数が必要。
+
+> <MyContext.Consumer>
+> {value => /_ コンテクストの値に基づいて何かをレンダーします _/}
+> </MyContext.Consumer>
+
+https://ja.reactjs.org/docs/context.html#contextconsumer
+
+```js
+<>
+  <AppContext.Consumer>
+    {(value) => {
+      return <div>{value}</div>;
+    }}
+  </AppContext.Consumer>
+  <tr>
+    <td>{event.id}</td>
+    ...
+    </td>
+  </tr>
+</>
+```
+
+Provider、Consumer を使うのは、hooks 登場以前の古いやり方。Consumer コンポーネントでのラップと、Consumer 内部でのコールバックを使用する点が分かりにくい。
+
+### hooks を用いた方法
+
+Consumer 側(Event.js)を以下のように修正する。
+このように、useContext を使用することで、バケツリレーをしなくても provider から consumer に伝えることができる。
+
+```js
+import React, { useContext } from 'react'; //useContext追加
+const value = useContext(AppContext); //追加
+<>
+  // <AppContext.Consumer>
+  //   {(value) => {
+  //     return <div>{value}</div>;
+  //   }}
+  // </AppContext.Consumer>
+  <div>{value}</div>;
+  <tr>
+    <td>{event.id}</td>
+    ...
+    </td>
+  </tr>
+</>
+```
+
+### developer tools
+
+https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=ja
