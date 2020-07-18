@@ -541,3 +541,75 @@ const value = useContext(AppContext); //追加
 ### developer tools
 
 https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=ja
+
+### redux のインストール
+
+> npm info redux
+> yarn add redux@4.0.1
+
+### combinereducers
+
+複数の reducer を統合して一つの reducer(root reducer) を作る redux の機能。react 純正の API では実現できない複雑な状態を管理することができる。
+
+https://redux.js.org/api/combinereducers
+
+> src/reducers/index.js
+
+上記のファイルが root reducer となるので、以下のように記述する。
+
+```js
+import { combineReducers } from 'redux';
+
+import events from './events';
+
+export default combineReducers({ events });
+```
+
+これで、root reducer から event というオブジェクトが取得できるようになった。
+これに伴い、App コンポーネントで現状イベントの配列を受け取る仕組みになっている部分の修正が必要。
+
+```js
+const App = () => {
+  const initislState = {
+    event: [],
+  };
+  // const [state, dispatch] = useReducer(reducer, []);
+  const [state, dispatch] = useReducer(reducer, initislState);
+};
+```
+
+> src>reducers>operationLogs.js
+
+という reducer を新しく追加し、combine 対象に加える。
+
+```js
+export default combineReducers({ events, operationLogs });
+```
+
+```js
+import { ADD_OPERATION_LOG, DELETE_ALL_OPERATION_LOGS } from '../actions';
+
+const operationLogs = (state = [], action) => {
+  switch (action.type) {
+    case ADD_OPERATION_LOG:
+      const operationLog = {
+        description: action.description,
+        operatedAt: action.operatedAt,
+      };
+      //常に最新のログをstate(...stateで配列展開できる)の前に表示させたいので[operationLog, ...state]と書く
+      return [operationLog, ...state];
+    case DELETE_ALL_OPERATION_LOGS:
+      return [];
+    default:
+      return state;
+  }
+};
+
+export default operationLogs;
+```
+
+### toISOString
+
+> src/utils.js
+
+https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Date/toISOString
